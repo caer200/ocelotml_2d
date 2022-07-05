@@ -2,9 +2,9 @@ from rdkit import Chem
 import torch
 from dgllife.utils import *
 from dgllife.utils.featurizers import CanonicalAtomFeaturizer, CanonicalBondFeaturizer
-from mlp_features import *
+from ocelotml_2d.mlp_features import *
 import json
-from MPNN_evidential import  MPNNPredictor_evidential
+from ocelotml_2d.MPNN_evidential import  MPNNPredictor_evidential
 import dgl
 
 
