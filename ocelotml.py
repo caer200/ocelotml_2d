@@ -61,8 +61,6 @@ def ocelot_model(params_file,chk_file,feats_dim=0):
         params = json.load(f)
     params.update({"descriptor_feats": feats_dim})
     model = define_model(**params)
-    print(chk_file)
-    print(params_file)
     model.load_state_dict(torch.load(chk_file, map_location=torch.device('cpu')))
     model.to(DEVICE)
     return model
@@ -120,9 +118,7 @@ def evaluate(inputs, **model_kwargs):
     feats = feats.to(DEVICE)
     g.set_n_initializer(dgl.init.zero_initializer)
     g.set_e_initializer(dgl.init.zero_initializer)
-    print(g)
-    print(feats)
-    print(feats_dim)
+
     model = ocelot_model(feats_dim=feats_dim, **model_kwargs)
     model.eval()
 
