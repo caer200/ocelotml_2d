@@ -126,6 +126,5 @@ def evaluate(inputs, **model_kwargs):
         prediction = model(g, ndata, edata)
     else:
         prediction = model(g, ndata, edata, feats)
-    print(prediction.tolist())
     return prediction.tolist()[0]
 
