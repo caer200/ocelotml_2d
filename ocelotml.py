@@ -3,34 +3,42 @@ import torch
 from dgllife.utils import *
 from dgllife.utils.featurizers import CanonicalAtomFeaturizer, CanonicalBondFeaturizer
 from ocelotml_2d.mlp_features import *
+#from mlp_features import *
 import json
 from ocelotml_2d.MPNN_evidential import  MPNNPredictor_evidential
+from ocelotml_2d.MPNN_readout import MPNN_readout
+#from MPNN_evidential import  MPNNPredictor_evidential
 import dgl
-
+from ocelotml_2d.MolNet import MolNet
 
 DEVICE = 'cpu'
 
-# function to predict from smiles
-def make_prediction_with_smiles(smiles, model_name="vie_4gen_evi"):
-    path = "models/ocelotml_2d/{}".format(model_name)
-    d = {"params_file" : "{}/params.json".format(path),
-     "chk_file" : "{}/best_r2.pt".format(path)
-     }
-    inputs = model_input_from_smiles(smiles,concat_feats="rdkit",fp=False, dft_descriptors=None)
-    prediction = evaluate(inputs=inputs,**d)
-    mean, lam, alpha, beta  = prediction
-    inverse_evidence = 1. / ((alpha - 1) * lam)
-    var = beta * inverse_evidence
-    with open("{}/params_std.json".format(path)) as f:
-        std_scale = json.load(f)
-    rescaled_var = var * std_scale["std_recal_ratio"]
 
-    return [round(mean,3), round(rescaled_var,3)]
-    # return [round(prediction.tolist()[0][0],2), "eV"]
+# second generation models
+def mlp_pred_from_smiles(model, smiles, fp_len):
+    mol = Chem.MolFromSmiles(smiles)
+    
+    feats = molecule_descriptors(mol, fp=fp_len)
+    feats = torch.tensor(feats, dtype=torch.float32)
+    feats = torch.unsqueeze(feats, dim = 0)
+    pred = model(feats)
+    return pred.item()
+    
+    
 
-
-# generates the model
-def define_model(node_in_feats=74,
+def simple_mlp_prediction(smiles, path, d):
+    
+    with open(d["params_file"], "r") as mpnnf:
+        mpnn_params = json.load(mpnnf)
+    fp_ln = mpnn_params.pop("v_length")
+    mnet = MolNet(**mpnn_params)
+    mnet.load_state_dict(torch.load(d["chk_file"], map_location="cpu"))
+    prediction = mlp_pred_from_smiles(mnet, smiles, fp_ln)
+    return prediction
+    
+    
+# third and fourth generation models
+def model_xgen(node_in_feats=74,
         edge_in_feats=12,
         node_out_feats=64,
         edge_hidden_feats=128,
@@ -40,7 +48,32 @@ def define_model(node_in_feats=74,
         num_layer_set2set=3,
         dropout = 0,
         descriptor_feats=0):
+    
+    model = MPNN_readout(
+        node_in_feats=node_in_feats,
+        edge_in_feats=edge_in_feats,
+        node_out_feats=node_out_feats,
+        edge_hidden_feats=edge_hidden_feats,
+        n_tasks=n_tasks,
+        num_step_message_passing=num_step_message_passing,
+        num_step_set2set=num_step_set2set,
+        num_layer_set2set=num_layer_set2set,
+        dropout=dropout,
+        descriptor_feats=descriptor_feats)
 
+    return model
+
+def model_4gen_evi(node_in_feats=74,
+        edge_in_feats=12,
+        node_out_feats=64,
+        edge_hidden_feats=128,
+        n_tasks=1,
+        num_step_message_passing=6,
+        num_step_set2set=6,
+        num_layer_set2set=3,
+        dropout = 0,
+        descriptor_feats=0):
+    
     model = MPNNPredictor_evidential(
         node_in_feats=node_in_feats,
         edge_in_feats=edge_in_feats,
@@ -55,15 +88,43 @@ def define_model(node_in_feats=74,
 
     return model
 
-# load the pretrained model and the parameters
-def ocelot_model(params_file,chk_file,feats_dim=0):
-    with open(params_file, "r") as f:
-        params = json.load(f)
-    params.update({"descriptor_feats": feats_dim})
-    model = define_model(**params)
-    model.load_state_dict(torch.load(chk_file, map_location=torch.device('cpu')))
-    model.to(DEVICE)
-    return model
+
+# function to predict from smiles
+def make_prediction_with_smiles(smiles, model_name="vie_4gen_evi"):
+    path = "models/ocelotml_2d/{}".format(model_name)
+    d = {"params_file" : "{}/params.json".format(path),
+     "chk_file" : "{}/best_r2.pt".format(path)
+     }
+    
+    if "_2gen" in path:
+        return [simple_mlp_prediction(smiles, path, d)]
+        
+    elif "_3gen" in path:
+        inputs = model_input_from_smiles(smiles,concat_feats=None,fp=False, dft_descriptors=None)
+        model = ocelot_model(feats_dim=inputs[2],generation="3gen", **d)
+        prediction = evaluate(inputs=inputs,model=model)
+        return prediction
+        
+    elif "_evi" in path:
+        inputs = model_input_from_smiles(smiles,concat_feats="rdkit",fp=False, dft_descriptors=None)
+        model = ocelot_model(feats_dim=inputs[2],generation="4gen_evi", **d)
+        prediction = evaluate(inputs=inputs,model=model)
+        mean, lam, alpha, beta  = prediction
+        inverse_evidence = 1. / ((alpha - 1) * lam)
+        var = beta * inverse_evidence
+        with open("{}/params_std.json".format(path)) as f:
+            std_scale = json.load(f)
+        rescaled_var = var * std_scale["std_recal_ratio"]
+
+        return [round(mean,3), round(rescaled_var,3)]
+    elif "_4gen" in path:
+        inputs = model_input_from_smiles(smiles,concat_feats="rdkit",fp=False, dft_descriptors=None)
+        model = ocelot_model(feats_dim=inputs[2],generation="4gen", **d)
+        prediction = evaluate(inputs=inputs,model=model)
+        return prediction
+
+    # return [round(prediction.tolist()[0][0],2), "eV"]
+
 
 
 # molecule descriptors
@@ -110,7 +171,7 @@ def model_input_from_smiles(smiles,concat_feats=None,fp=False, dft_descriptors=N
 
 
 # evaluate
-def evaluate(inputs, **model_kwargs):
+def evaluate(inputs, model):
     g, feats, feats_dim = inputs
     g = g.to(DEVICE)
     ndata = g.ndata["hv"].to(DEVICE)
@@ -119,12 +180,25 @@ def evaluate(inputs, **model_kwargs):
     g.set_n_initializer(dgl.init.zero_initializer)
     g.set_e_initializer(dgl.init.zero_initializer)
 
-    model = ocelot_model(feats_dim=feats_dim, **model_kwargs)
-    model.eval()
-
     if feats_dim == 0:
         prediction = model(g, ndata, edata)
     else:
         prediction = model(g, ndata, edata, feats)
     return prediction.tolist()[0]
 
+
+
+# load the pretrained model and the parameters
+def ocelot_model(params_file,chk_file,feats_dim=0,generation=None):
+    with open(params_file, "r") as f:
+        params = json.load(f)
+    params.update({"descriptor_feats": feats_dim})
+    
+    if generation == "3gen" or generation == "4gen":
+        model = model_xgen(**params)
+    elif generation == "4gen_evi":
+        model = model_4gen_evi(**params)
+    model.load_state_dict(torch.load(chk_file, map_location=torch.device('cpu')))
+    model.to(DEVICE)
+    model.eval()
+    return model

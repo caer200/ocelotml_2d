@@ -74,6 +74,7 @@ get_1024_morgan_bit = AllChem.GetMorganFingerprintAsBitVect
 to = Chem.MolToSmiles
 
 max_d = pd.read_csv("ocelotml_2d/normalized_feats.csv", index_col = 0)
+#max_d = pd.read_csv("normalized_feats.csv", index_col = 0)
 max_d_arr = np.array(max_d).transpose()
 
 def all_properties(mol):
@@ -157,7 +158,7 @@ def all_properties(mol):
 def molecule_descriptors(mol, fp=False):
     one = []
     if fp:
-        fingerprint = get_1024_morgan_bit(mol, 2, nBits = 1024)
+        fingerprint = get_1024_morgan_bit(mol, 2, nBits = fp)
         array = np.zeros((0,), dtype=np.int8)
         DataStructs.ConvertToNumpyArray(fingerprint, array)
         one = array.tolist()
