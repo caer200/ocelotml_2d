@@ -9,3 +9,5 @@ This repository contains the code to download the OCELOT chromophore dataset and
 `dataset.ipynb` - download the OCELOT chrmomophore v1 dataset and transform to pandas DataFrame
 
 `mlp_features` and `normalize_feats.csv` - generate the features for model input
+
+`first_gen_models.ipynb` - Training of first generation model
