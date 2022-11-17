@@ -1,6 +1,8 @@
 # OCELOTML 2D
 This repository contains the code to download the OCELOT chromophore dataset and use the pretrained models to make predictions. You can find the online implementation at [here](https://oscar.as.uky.edu/ocelotml_2d)
 
+More details on model in our paper [Electronic, Redox, and Optical Property Prediction of Organic P-Conjugated Molecules through a Hierarchy of Machine Learning Approaches](https://doi.org/10.1039/d2sc04676h)
+
 
 
 ## Files
