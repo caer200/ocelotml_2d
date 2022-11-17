@@ -1,5 +1,7 @@
 # OCELOTML 2D
-This repository contains the code to download the OCELOT chromophore dataset and use the pretrained models to make predictions
+This repository contains the code to download the OCELOT chromophore dataset and use the pretrained models to make predictions. You can find the online implementation at [here](https://oscar.as.uky.edu/ocelotml_2d)
+
+
 
 ## Files
 `eval.ipynb` - make predictions with SMILES
