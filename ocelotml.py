@@ -91,21 +91,21 @@ def model_4gen_evi(node_in_feats=74,
 
 # function to predict from smiles
 def make_prediction_with_smiles(smiles, model_name="vie_4gen_evi"):
-    path = "."
-    d = {"params_file" : "{}/params.json".format(path),
-     "chk_file" : "{}/best_r2.pt".format(path)
+    
+    d = {"params_file" : "params.json",
+     "chk_file" : "best_r2.pt"
      }
     
-    if "_2gen" in path:
+    if "_2gen" in model_name:
         return [simple_mlp_prediction(smiles, path, d)]
         
-    elif "_3gen" in path:
+    elif "_3gen" in model_name:
         inputs = model_input_from_smiles(smiles,concat_feats=None,fp=False, dft_descriptors=None)
         model = ocelot_model(feats_dim=inputs[2],generation="3gen", **d)
         prediction = evaluate(inputs=inputs,model=model)
         return prediction
         
-    elif "_evi" in path:
+    elif "_evi" in model_name:
         inputs = model_input_from_smiles(smiles,concat_feats="rdkit",fp=False, dft_descriptors=None)
         model = ocelot_model(feats_dim=inputs[2],generation="4gen_evi", **d)
         prediction = evaluate(inputs=inputs,model=model)
@@ -117,7 +117,7 @@ def make_prediction_with_smiles(smiles, model_name="vie_4gen_evi"):
         rescaled_var = var * std_scale["std_recal_ratio"]
 
         return [round(mean,3), round(rescaled_var,3)]
-    elif "_4gen" in path:
+    elif "_4gen" in model_name:
         inputs = model_input_from_smiles(smiles,concat_feats="rdkit",fp=False, dft_descriptors=None)
         model = ocelot_model(feats_dim=inputs[2],generation="4gen", **d)
         prediction = evaluate(inputs=inputs,model=model)
