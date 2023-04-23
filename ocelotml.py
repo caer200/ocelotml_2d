@@ -26,7 +26,7 @@ def mlp_pred_from_smiles(model, smiles, fp_len):
     
     
 
-def simple_mlp_prediction(smiles, path, d):
+def simple_mlp_prediction(smiles, d):
     
     with open(d["params_file"], "r") as mpnnf:
         mpnn_params = json.load(mpnnf)
@@ -97,7 +97,7 @@ def make_prediction_with_smiles(smiles, model_name="vie_4gen_evi"):
      }
     
     if "_2gen" in model_name:
-        return [simple_mlp_prediction(smiles, path, d)]
+        return [simple_mlp_prediction(smiles, d)]
         
     elif "_3gen" in model_name:
         inputs = model_input_from_smiles(smiles,concat_feats=None,fp=False, dft_descriptors=None)
@@ -112,7 +112,7 @@ def make_prediction_with_smiles(smiles, model_name="vie_4gen_evi"):
         mean, lam, alpha, beta  = prediction
         inverse_evidence = 1. / ((alpha - 1) * lam)
         var = beta * inverse_evidence
-        with open("{}/params_std.json".format(path)) as f:
+        with open("params_std.json") as f:
             std_scale = json.load(f)
         rescaled_var = var * std_scale["std_recal_ratio"]
 
