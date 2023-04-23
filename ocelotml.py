@@ -91,7 +91,7 @@ def model_4gen_evi(node_in_feats=74,
 
 # function to predict from smiles
 def make_prediction_with_smiles(smiles, model_name="vie_4gen_evi"):
-    path = "models/ocelotml_2d/{}".format(model_name)
+    path = "."
     d = {"params_file" : "{}/params.json".format(path),
      "chk_file" : "{}/best_r2.pt".format(path)
      }
